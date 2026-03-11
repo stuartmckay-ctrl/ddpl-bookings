@@ -11,64 +11,102 @@
             --fife-blue: #005a8c;
             --pool-green: #27ae60;
             --booked-red: #e74c3c;
+            --maint-grey: #7f8c8d;
             --dark: #121212;
         }
 
-        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; }
-        header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; color: #333; }
+        header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--fife-blue); }
         
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-        .table-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); }
+        
+        /* Navigation */
+        .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; transition: 0.3s; }
+        .btn-admin { background: var(--fife-blue); color: white; }
+        
+        /* Grid Display */
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .table-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); transition: transform 0.2s; }
+        .table-card:hover { transform: translateY(-5px); }
         .is-booked { border-top-color: var(--booked-red); }
+        .is-maint { border-top-color: var(--maint-grey); }
 
-        #admin-section { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
-        .calendar-wrap { overflow-x: auto; margin-top: 20px; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 0.8rem; }
-        th { background: var(--fife-blue); color: white; }
-        .slot-booked { background: var(--booked-red); color: white; font-weight: bold; }
+        /* Admin Panel */
+        #admin-section { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #ddd; }
+        .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: #f9f9f9; padding: 20px; border-radius: 8px; }
+        label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn-confirm { padding: 10px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; background: var(--pool-green); }
 
-        .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
-        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        .btn-confirm { background: var(--pool-green); color: white; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; }
+        /* Calendar Table */
+        .calendar-wrap { overflow-x: auto; margin-top: 20px; background: white; padding: 10px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { border: 1px solid #eee; padding: 8px; text-align: center; font-size: 0.75rem; }
+        th { background: var(--fife-blue); color: white; position: sticky; top: 0; }
+        
+        /* Live Indicator */
+        .pulse-icon { width: 8px; height: 8px; background-color: #27ae60; border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
+        /* Login Overlay */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; color: #333; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
     </style>
 </head>
 <body>
 
 <header>
     <div style="display:flex; align-items:center;">
-        <h2 style="font-size: 1.1rem; margin:0;">DDPL Bookings</h2>
+        <h2 style="font-size: 1.2rem; margin:0;">DDPL Pool Bookings</h2>
     </div>
     <div class="nav-btns">
         <button onclick="showPublic()">Customer View</button>
-        <button id="admin-nav-btn" style="background:var(--fife-blue); color:white;" onclick="promptAdmin()">Admin Login</button>
+        <button id="admin-nav-btn" class="btn-admin" onclick="promptAdmin()">Admin Login</button>
     </div>
 </header>
 
 <div class="container">
     <div id="admin-section">
-        <h3>Admin Booking Panel</h3>
+        <h3>Admin Booking & Maintenance</h3>
         <div class="booking-form">
-            <select id="adm-table"><option value="1">Table 1</option><option value="2">Table 2</option><option value="3">Table 3</option><option value="4">Table 4</option></select>
-            <input type="date" id="adm-date">
-            <input type="time" id="adm-time">
-            <select id="adm-dur">
-                <option value="1">1 Hour</option>
-                <option value="2">2 Hours</option>
-                <option value="3">3 Hours</option>
-                <option value="6">6 Hours</option>
-                <option value="block">All Day Block</option>
-            </select>
-            <button class="btn-confirm" onclick="saveBooking()">Save Booking</button>
+            <div>
+                <label>Table</label>
+                <select id="adm-table"></select>
+            </div>
+            <div>
+                <label>Date</label>
+                <input type="date" id="adm-date">
+            </div>
+            <div>
+                <label>Time & Duration</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="time" id="adm-time">
+                    <select id="adm-dur">
+                        <option value="1">1 Hour</option>
+                        <option value="2">2 Hours</option>
+                        <option value="3">3 Hours</option>
+                        <option value="6">6 Hours</option>
+                        <option value="block">All Day</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label>Maintenance Note</label>
+                <input type="text" id="adm-note" placeholder="Reason for offline">
+            </div>
+            <div style="display:flex; gap:10px; align-items:flex-end;">
+                <button class="btn-confirm" onclick="saveBooking()" style="flex:1">Book Slot</button>
+                <button class="btn-confirm" onclick="toggleMaintenance()" style="flex:1; background:var(--maint-grey);">Service Toggle</button>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f1f1f1; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+            <p style="margin:0; font-weight:bold;">Reporting & Data</p>
+            <button class="btn-confirm" style="background: var(--dark); width: auto;" onclick="downloadReport()">Download CSV Report</button>
         </div>
 
         <div class="calendar-wrap">
-            <h4 id="cal-date-title">Schedule for Today</h4>
+            <h4 id="cal-date-title">Today's Schedule (10:00 - 00:00)</h4>
             <table id="calendar-table">
                 <thead><tr id="table-headers"><th>Time</th></tr></thead>
                 <tbody id="calendar-body"></tbody>
@@ -77,7 +115,13 @@
     </div>
 
     <div id="public-section">
-        <h3 id="current-date-label">Current Table Availability</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 id="current-date-label" style="margin:0;">Live Table Availability</h3>
+            <div style="display: flex; align-items: center; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div class="pulse-icon"></div>
+                <small id="last-updated" style="color: #666; font-weight: bold;">Connecting...</small>
+            </div>
+        </div>
         <div id="status-grid" class="status-grid"></div>
     </div>
 </div>
@@ -85,10 +129,9 @@
 <div id="login-overlay">
     <div class="login-box">
         <h3>Admin Access</h3>
-        <input type="password" id="admin-pass" placeholder="Enter Password">
-        <br><br>
-        <button onclick="checkPass()" style="padding:10px 20px;">Login</button>
-        <button onclick="document.getElementById('login-overlay').style.display='none'">Cancel</button>
+        <input type="password" id="admin-pass" placeholder="Enter Password" style="margin-bottom:15px;">
+        <button onclick="checkPass()" class="btn-confirm" style="width:100%; margin-bottom:10px;">Login</button>
+        <button onclick="document.getElementById('login-overlay').style.display='none'" style="border:none; background:none; cursor:pointer; color:grey;">Cancel</button>
     </div>
 </div>
 
@@ -104,32 +147,37 @@
         appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
 
-    // Global settings
+    // Global Constants
     const TOTAL_TABLES = 10; 
     const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
     let isAdmin = false;
     let db;
 
+    // Initialize Firebase
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.database();
-    } catch (e) {
-        console.error("Firebase Error:", e);
-    }
+    } catch (e) { console.error("Firebase Error:", e); }
 
-    // Initialize Admin Dropdown
-    const tableSelect = document.getElementById('adm-table');
-    tableSelect.innerHTML = '';
+    // Init Table Dropdown
+    const tSel = document.getElementById('adm-table');
     for(let i=1; i<=TOTAL_TABLES; i++) {
-        tableSelect.innerHTML += `<option value="${i}">Table ${i}</option>`;
+        tSel.innerHTML += `<option value="${i}">Table ${i}</option>`;
     }
 
-    // 2. VIEW TOGGLE FUNCTIONS
-    window.showPublic = function() {
-        document.getElementById('admin-section').style.display = 'none';
-        document.getElementById('public-section').style.display = 'block';
-    };
+    // 2. LISTENERS
+    if (db) {
+        db.ref().on('value', snap => {
+            const data = snap.val() || {};
+            renderPublic(data.table_bookings || {}, data.maintenance || {});
+            renderCalendar(data.table_bookings || {}, data.maintenance || {});
+            
+            const now = new Date();
+            document.getElementById('last-updated').innerText = "Live: " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        });
+    }
 
+    // 3. ADMIN FUNCTIONS
     window.promptAdmin = function() {
         if(isAdmin) {
             document.getElementById('admin-section').style.display = 'block';
@@ -145,139 +193,107 @@
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('admin-section').style.display = 'block';
             document.getElementById('public-section').style.display = 'none';
-            document.getElementById('admin-nav-btn').innerText = "Admin Active";
-        } else {
-            alert("Incorrect Password");
-        }
+            document.getElementById('admin-nav-btn').innerText = "Admin Dashboard";
+        } else { alert("Incorrect Password"); }
     };
 
-    // 3. DATABASE LISTENER
-    if (db) {
-        db.ref().on('value', snap => {
-            const allData = snap.val() || {};
-            const bookings = allData.table_bookings || {};
-            const maintenance = allData.maintenance || {};
-            renderPublic(bookings, maintenance);
-            renderCalendar(bookings, maintenance);
-        });
-    }
+    window.showPublic = function() {
+        document.getElementById('admin-section').style.display = 'none';
+        document.getElementById('public-section').style.display = 'block';
+    };
 
-    // 4. BOOKING & MAINTENANCE LOGIC
+    // 4. DATA LOGIC
     window.saveBooking = function() {
         const table = document.getElementById('adm-table').value;
         const date = document.getElementById('adm-date').value;
         const start = document.getElementById('adm-time').value;
         const dur = document.getElementById('adm-dur').value;
+        if(!date || !start) return alert("Please fill in Date and Time");
 
-        if(!date || !start) return alert("Select date/time");
-
-        let end = "";
-        if(dur === 'block') {
-            end = "23:59";
-        } else {
+        let end;
+        if(dur === 'block') { end = "23:59"; } 
+        else {
             let [h, m] = start.split(':');
             end = (parseInt(h) + parseInt(dur)).toString().padStart(2, '0') + ":" + m;
         }
 
-        db.ref('table_bookings').push({ table, date, start, end, dur })
-          .then(() => alert("Table " + table + " booked!"))
-          .catch(err => alert("Error: " + err.message));
+        db.ref('table_bookings').push({ table, date, start, end, dur });
+        alert("Table " + table + " Booked!");
     };
 
     window.toggleMaintenance = function() {
         const table = document.getElementById('adm-table').value;
+        const note = document.getElementById('adm-note').value || "Routine Service";
         const ref = db.ref('maintenance/' + table);
-        
         ref.once('value', snap => {
-            if(snap.val()) {
-                ref.remove();
-                alert("Table " + table + " is now back in service.");
-            } else {
-                ref.set(true);
-                alert("Table " + table + " is now OUT OF SERVICE.");
-            }
+            if(snap.val()) { ref.remove(); alert("Table Online"); }
+            else { ref.set({ active: true, reason: note }); alert("Table Offline"); }
         });
     };
 
-    // 5. RENDERING FUNCTIONS
-    function renderPublic(bookings, maintenance) {
+    window.deleteBooking = function(id) {
+        if(confirm("Cancel this booking?")) db.ref('table_bookings/' + id).remove();
+    };
+
+    window.downloadReport = function() {
+        db.ref('table_bookings').once('value', snap => {
+            const data = snap.val();
+            if(!data) return alert("No records found");
+            let csv = "Table,Date,Start,End,Duration\n";
+            Object.values(data).forEach(b => csv += `${b.table},${b.date},${b.start},${b.end},${b.dur}\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'DDPL_Report.csv'; a.click();
+        });
+    };
+
+    // 5. RENDERING
+    function renderPublic(bookings, maint) {
         const grid = document.getElementById('status-grid');
-        if (!grid) return;
         grid.innerHTML = '';
-        const now = new Date();
-        const today = now.toISOString().split('T')[0];
-        const currentTime = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date().getHours().toString().padStart(2,'0') + ":" + new Date().getMinutes().toString().padStart(2,'0');
 
         for(let i=1; i<=TOTAL_TABLES; i++) {
-            const isOut = maintenance && maintenance[i];
-            const tableBookings = Object.values(bookings).filter(b => b.table == i && b.date == today);
-            const active = tableBookings.find(b => currentTime >= b.start && currentTime <= b.end);
+            const isM = maint[i];
+            const active = Object.values(bookings).find(b => b.table == i && b.date == today && now >= b.start && now <= b.end);
 
             const card = document.createElement('div');
-            // Logic for colors
-            let statusClass = '';
-            let statusText = 'FREE';
-            let subText = 'Available Now';
-            let color = 'green';
+            card.className = `table-card ${isM ? 'is-maint' : (active ? 'is-booked' : '')}`;
+            
+            let status = 'FREE', color = 'var(--pool-green)', sub = 'Available Now';
+            if(isM) { status = 'OFFLINE'; color = 'var(--maint-grey)'; sub = isM.reason; card.style.borderTopColor = 'var(--maint-grey)'; }
+            else if(active) { status = 'OCCUPIED'; color = 'var(--booked-red)'; sub = 'Until ' + active.end; }
 
-            if (isOut) {
-                statusClass = 'is-maintenance'; // Add .is-maintenance { border-top-color: #7f8c8d; } to your CSS
-                statusText = 'OUT OF SERVICE';
-                subText = 'Maintenance';
-                color = '#7f8c8d';
-            } else if (active) {
-                statusClass = 'is-booked';
-                statusText = 'OCCUPIED';
-                subText = 'Until ' + active.end;
-                color = 'red';
-            }
-
-            card.className = `table-card ${statusClass}`;
-            if(isOut) card.style.borderTopColor = "#7f8c8d";
-
-            card.innerHTML = `
-                <h3>Table ${i}</h3>
-                <p style="color:${color}; font-weight:bold;">${statusText}</p>
-                <small>${subText}</small>
-            `;
+            card.innerHTML = `<h3>Table ${i}</h3><p style="color:${color};font-weight:bold;">${status}</p><small>${sub}</small>`;
             grid.appendChild(card);
         }
     }
 
-    function renderCalendar(bookings, maintenance) {
+    function renderCalendar(bookings, maint) {
         const body = document.getElementById('calendar-body');
         const head = document.getElementById('table-headers');
-        if (!body || !head) return;
-        
-        body.innerHTML = '';
-        head.innerHTML = '<th>Time</th>';
+        body.innerHTML = ''; head.innerHTML = '<th>Time</th>';
         const today = new Date().toISOString().split('T')[0];
 
         for(let i=1; i<=TOTAL_TABLES; i++) head.innerHTML += `<th>T${i}</th>`;
 
         for(let h=10; h<=23; h++) {
             const row = document.createElement('tr');
-            const timeStr = h.toString().padStart(2, '0') + ":00";
-            row.innerHTML = `<td>${timeStr}</td>`;
-
+            const tStr = h.toString().padStart(2, '0') + ":00";
+            row.innerHTML = `<td>${tStr}</td>`;
             for(let t=1; t<=TOTAL_TABLES; t++) {
-                const isOut = maintenance && maintenance[t];
-                const booked = Object.values(bookings).find(b => 
-                    b.table == t && b.date == today && 
-                    (timeStr >= b.start && timeStr < b.end)
-                );
+                const isM = maint[t];
+                const bEntry = Object.entries(bookings).find(([id, b]) => b.table == t && b.date == today && tStr >= b.start && tStr < b.end);
                 
-                let cellClass = '';
-                let cellText = '';
-                if(isOut) {
-                    cellClass = 'slot-maintenance'; // Add CSS for this
-                    cellText = 'OFF';
-                } else if(booked) {
-                    cellClass = 'slot-booked';
-                    cellText = 'YES';
+                let style = '', content = '';
+                if(isM) { style = 'background:#eee; color:#aaa;'; content = 'OFF'; }
+                else if(bEntry) { 
+                    style = 'background:var(--booked-red); color:white;'; 
+                    content = `YES <button onclick="deleteBooking('${bEntry[0]}')" style="background:none; border:none; color:white; cursor:pointer; font-size:10px; font-weight:bold;">X</button>`;
                 }
-
-                row.innerHTML += `<td class="${cellClass}" ${isOut ? 'style="background:#bdc3c7"' : ''}>${cellText}</td>`;
+                row.innerHTML += `<td style="${style}">${content}</td>`;
             }
             body.appendChild(row);
         }
@@ -285,5 +301,3 @@
 </script>
 </body>
 </html>
-
-
