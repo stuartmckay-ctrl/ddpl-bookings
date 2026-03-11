@@ -48,6 +48,9 @@
         #admin-section { display: none; }
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
         .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 280px; }
+        
+        .date-nav { display: flex; align-items: center; gap: 5px; background: #eee; padding: 5px; border-radius: 5px; }
+        .date-nav button { background: var(--fife-blue); color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -113,7 +116,14 @@
         </div>
 
         <div class="calendar-wrap">
-            <h4>Admin Schedule View (Click X to Delete)</h4>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h4 style="margin:0;">Schedule Management</h4>
+                <div class="date-nav">
+                    <button onclick="adjustDate(-1)">←</button>
+                    <input type="date" id="adm-view-date" onchange="changeAdminDate(this.value)">
+                    <button onclick="adjustDate(1)">→</button>
+                </div>
+            </div>
             <table id="adm-calendar-table">
                 <thead><tr id="adm-table-headers"><th>Time</th></tr></thead>
                 <tbody id="adm-calendar-body"></tbody>
@@ -127,6 +137,7 @@
         <h3>Admin Access</h3>
         <input type="password" id="admin-pass" placeholder="Password" style="margin-bottom:15px;">
         <button onclick="checkPass()" class="btn-confirm" style="width:100%;">Login</button>
+        <button onclick="document.getElementById('login-overlay').style.display='none'" style="border:none;background:none;color:grey;margin-top:10px;cursor:pointer;">Cancel</button>
     </div>
 </div>
 
@@ -146,6 +157,7 @@
     const TOTAL_TABLES = 10;
     let isAdmin = false;
     let db;
+    let currentAdminViewDate = new Date().toISOString().split('T')[0];
 
     try {
         firebase.initializeApp(firebaseConfig);
@@ -153,7 +165,8 @@
     } catch (e) { console.error(e); }
 
     function getOpeningHours(dateStr) {
-        const day = new Date(dateStr).getDay();
+        const date = new Date(dateStr);
+        const day = date.getDay(); // 0 is Sunday, 1 is Monday...
         if (day >= 1 && day <= 4) return { start: 15, end: 23 }; 
         if (day === 5) return { start: 12, end: 23 };           
         return { start: 11, end: 23 };                          
@@ -165,9 +178,29 @@
             const bookings = data.table_bookings || {};
             const maint = data.maintenance || {};
             renderPublic(bookings, maint);
-            renderCalendar('adm', bookings, maint);
-            renderCalendar('pub', bookings, maint);
+            renderCalendar('adm', bookings, maint, currentAdminViewDate);
+            renderCalendar('pub', bookings, maint, new Date().toISOString().split('T')[0]);
             document.getElementById('last-updated').innerText = "Live: " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        });
+    }
+
+    window.changeAdminDate = function(newDate) {
+        currentAdminViewDate = newDate;
+        refreshViews();
+    };
+
+    window.adjustDate = function(days) {
+        let date = new Date(currentAdminViewDate);
+        date.setDate(date.getDate() + days);
+        currentAdminViewDate = date.toISOString().split('T')[0];
+        document.getElementById('adm-view-date').value = currentAdminViewDate;
+        refreshViews();
+    };
+
+    function refreshViews() {
+        db.ref().once('value', snap => {
+            const data = snap.val() || {};
+            renderCalendar('adm', data.table_bookings || {}, data.maintenance || {}, currentAdminViewDate);
         });
     }
 
@@ -218,12 +251,12 @@
         }
     }
 
-    function renderCalendar(view, bookings, maint) {
+    function renderCalendar(view, bookings, maint, targetDate) {
         const body = document.getElementById(view + '-calendar-body');
         const head = document.getElementById(view + '-table-headers');
+        if(!body || !head) return;
         body.innerHTML = ''; head.innerHTML = '<th>Time</th>';
-        const today = new Date().toISOString().split('T')[0];
-        const hours = getOpeningHours(today);
+        const hours = getOpeningHours(targetDate);
 
         for(let i=1; i<=TOTAL_TABLES; i++) head.innerHTML += `<th>T${i}</th>`;
 
@@ -233,7 +266,7 @@
             row.innerHTML = `<td>${tStr}</td>`;
             for(let t=1; t<=TOTAL_TABLES; t++) {
                 const isM = maint[t];
-                const bEntry = Object.entries(bookings).find(([id, b]) => b.table == t && b.date == today && tStr >= b.start && tStr < b.end);
+                const bEntry = Object.entries(bookings).find(([id, b]) => b.table == t && b.date == targetDate && tStr >= b.start && tStr < b.end);
                 let style = '', content = '';
                 if(isM) { style = 'background:#eee;'; content = 'OFF'; }
                 else if(bEntry) { 
@@ -249,7 +282,11 @@
     window.promptAdmin = () => isAdmin ? showAdmin() : document.getElementById('login-overlay').style.display='flex';
     window.checkPass = () => { if(document.getElementById('admin-pass').value === ADMIN_PASSWORD){ isAdmin=true; document.getElementById('login-overlay').style.display='none'; showAdmin(); } else alert("Wrong Password"); };
     window.showPublic = () => { document.getElementById('admin-section').style.display='none'; document.getElementById('public-section').style.display='block'; };
-    function showAdmin() { document.getElementById('admin-section').style.display='block'; document.getElementById('public-section').style.display='none'; }
+    function showAdmin() { 
+        document.getElementById('admin-section').style.display='block'; 
+        document.getElementById('public-section').style.display='none';
+        document.getElementById('adm-view-date').value = currentAdminViewDate;
+    }
     window.deleteBooking = (id) => { if(confirm("Delete booking?")) db.ref('table_bookings/'+id).remove(); };
     window.toggleMaintenance = () => {
         const table = document.getElementById('adm-table').value;
@@ -269,6 +306,8 @@
     ['pub-table', 'adm-table'].forEach(id => {
         for(let i=1; i<=TOTAL_TABLES; i++) document.getElementById(id).innerHTML += `<option value="${i}">Table ${i}</option>`;
     });
+    document.getElementById('pub-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('adm-date').value = new Date().toISOString().split('T')[0];
 </script>
 </body>
 </html>
