@@ -104,44 +104,48 @@
         appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
 
-    // Initialize Firebase and Database globally
+    // Global settings
+    const TOTAL_TABLES = 10; 
+    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
+    let isAdmin = false;
     let db;
+
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.database();
-        console.log("Firebase initialized successfully");
     } catch (e) {
-        console.error("Firebase initialization failed:", e);
+        console.error("Firebase Error:", e);
     }
 
-    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
-    let isAdmin = false;
+    // Initialize Admin Dropdown
+    const tableSelect = document.getElementById('adm-table');
+    tableSelect.innerHTML = '';
+    for(let i=1; i<=TOTAL_TABLES; i++) {
+        tableSelect.innerHTML += `<option value="${i}">Table ${i}</option>`;
+    }
 
-    // 2. VIEW TOGGLE FUNCTIONS (Moving these to the top ensures they work)
+    // 2. VIEW TOGGLE FUNCTIONS
     window.showPublic = function() {
-        console.log("Switching to Public View");
         document.getElementById('admin-section').style.display = 'none';
         document.getElementById('public-section').style.display = 'block';
     };
 
     window.promptAdmin = function() {
-        console.log("Login prompt requested");
         if(isAdmin) {
             document.getElementById('admin-section').style.display = 'block';
+            document.getElementById('public-section').style.display = 'none';
         } else {
             document.getElementById('login-overlay').style.display = 'flex';
         }
     };
 
     window.checkPass = function() {
-        const pass = document.getElementById('admin-pass').value;
-        if(pass === ADMIN_PASSWORD) {
+        if(document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
             isAdmin = true;
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('admin-section').style.display = 'block';
             document.getElementById('public-section').style.display = 'none';
             document.getElementById('admin-nav-btn').innerText = "Admin Active";
-            console.log("Admin logged in");
         } else {
             alert("Incorrect Password");
         }
@@ -149,14 +153,16 @@
 
     // 3. DATABASE LISTENER
     if (db) {
-        db.ref('table_bookings').on('value', snap => {
-            const data = snap.val() || {};
-            renderPublic(data);
-            renderCalendar(data);
+        db.ref().on('value', snap => {
+            const allData = snap.val() || {};
+            const bookings = allData.table_bookings || {};
+            const maintenance = allData.maintenance || {};
+            renderPublic(bookings, maintenance);
+            renderCalendar(bookings, maintenance);
         });
     }
 
-    // 4. BOOKING LOGIC
+    // 4. BOOKING & MAINTENANCE LOGIC
     window.saveBooking = function() {
         const table = document.getElementById('adm-table').value;
         const date = document.getElementById('adm-date').value;
@@ -174,12 +180,27 @@
         }
 
         db.ref('table_bookings').push({ table, date, start, end, dur })
-          .then(() => alert("Booking saved!"))
-          .catch(err => alert("Error saving: " + err.message));
+          .then(() => alert("Table " + table + " booked!"))
+          .catch(err => alert("Error: " + err.message));
+    };
+
+    window.toggleMaintenance = function() {
+        const table = document.getElementById('adm-table').value;
+        const ref = db.ref('maintenance/' + table);
+        
+        ref.once('value', snap => {
+            if(snap.val()) {
+                ref.remove();
+                alert("Table " + table + " is now back in service.");
+            } else {
+                ref.set(true);
+                alert("Table " + table + " is now OUT OF SERVICE.");
+            }
+        });
     };
 
     // 5. RENDERING FUNCTIONS
-    function renderPublic(data) {
+    function renderPublic(bookings, maintenance) {
         const grid = document.getElementById('status-grid');
         if (!grid) return;
         grid.innerHTML = '';
@@ -187,22 +208,43 @@
         const today = now.toISOString().split('T')[0];
         const currentTime = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
 
-        for(let i=1; i<=4; i++) {
-            const bookings = Object.values(data).filter(b => b.table == i && b.date == today);
-            const active = bookings.find(b => currentTime >= b.start && currentTime <= b.end);
+        for(let i=1; i<=TOTAL_TABLES; i++) {
+            const isOut = maintenance && maintenance[i];
+            const tableBookings = Object.values(bookings).filter(b => b.table == i && b.date == today);
+            const active = tableBookings.find(b => currentTime >= b.start && currentTime <= b.end);
 
             const card = document.createElement('div');
-            card.className = `table-card ${active ? 'is-booked' : ''}`;
+            // Logic for colors
+            let statusClass = '';
+            let statusText = 'FREE';
+            let subText = 'Available Now';
+            let color = 'green';
+
+            if (isOut) {
+                statusClass = 'is-maintenance'; // Add .is-maintenance { border-top-color: #7f8c8d; } to your CSS
+                statusText = 'OUT OF SERVICE';
+                subText = 'Maintenance';
+                color = '#7f8c8d';
+            } else if (active) {
+                statusClass = 'is-booked';
+                statusText = 'OCCUPIED';
+                subText = 'Until ' + active.end;
+                color = 'red';
+            }
+
+            card.className = `table-card ${statusClass}`;
+            if(isOut) card.style.borderTopColor = "#7f8c8d";
+
             card.innerHTML = `
                 <h3>Table ${i}</h3>
-                <p style="color:${active?'red':'green'}; font-weight:bold;">${active ? 'OCCUPIED' : 'FREE'}</p>
-                <small>${active ? 'Until ' + active.end : 'Available Now'}</small>
+                <p style="color:${color}; font-weight:bold;">${statusText}</p>
+                <small>${subText}</small>
             `;
             grid.appendChild(card);
         }
     }
 
-    function renderCalendar(data) {
+    function renderCalendar(bookings, maintenance) {
         const body = document.getElementById('calendar-body');
         const head = document.getElementById('table-headers');
         if (!body || !head) return;
@@ -211,19 +253,31 @@
         head.innerHTML = '<th>Time</th>';
         const today = new Date().toISOString().split('T')[0];
 
-        for(let i=1; i<=4; i++) head.innerHTML += `<th>Table ${i}</th>`;
+        for(let i=1; i<=TOTAL_TABLES; i++) head.innerHTML += `<th>T${i}</th>`;
 
         for(let h=10; h<=23; h++) {
             const row = document.createElement('tr');
             const timeStr = h.toString().padStart(2, '0') + ":00";
             row.innerHTML = `<td>${timeStr}</td>`;
 
-            for(let t=1; t<=4; t++) {
-                const booked = Object.values(data).find(b => 
+            for(let t=1; t<=TOTAL_TABLES; t++) {
+                const isOut = maintenance && maintenance[t];
+                const booked = Object.values(bookings).find(b => 
                     b.table == t && b.date == today && 
                     (timeStr >= b.start && timeStr < b.end)
                 );
-                row.innerHTML += `<td class="${booked ? 'slot-booked' : ''}">${booked ? 'BOOKED' : ''}</td>`;
+                
+                let cellClass = '';
+                let cellText = '';
+                if(isOut) {
+                    cellClass = 'slot-maintenance'; // Add CSS for this
+                    cellText = 'OFF';
+                } else if(booked) {
+                    cellClass = 'slot-booked';
+                    cellText = 'YES';
+                }
+
+                row.innerHTML += `<td class="${cellClass}" ${isOut ? 'style="background:#bdc3c7"' : ''}>${cellText}</td>`;
             }
             body.appendChild(row);
         }
@@ -231,4 +285,5 @@
 </script>
 </body>
 </html>
+
 
