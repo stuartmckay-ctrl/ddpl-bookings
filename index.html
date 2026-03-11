@@ -104,43 +104,60 @@
         appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    // Initialize Firebase and Database globally
+    let db;
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        console.log("Firebase initialized successfully");
+    } catch (e) {
+        console.error("Firebase initialization failed:", e);
+    }
 
     const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
     let isAdmin = false;
 
-    // 2. LISTEN FOR DATA
-    db.ref('table_bookings').on('value', snap => {
-        const data = snap.val() || {};
-        renderPublic(data);
-        renderCalendar(data);
-    });
+    // 2. VIEW TOGGLE FUNCTIONS (Moving these to the top ensures they work)
+    window.showPublic = function() {
+        console.log("Switching to Public View");
+        document.getElementById('admin-section').style.display = 'none';
+        document.getElementById('public-section').style.display = 'block';
+    };
 
-    // 3. SECURITY FUNCTIONS
-    function promptAdmin() {
-        if(isAdmin) return;
-        document.getElementById('login-overlay').style.display = 'flex';
-    }
+    window.promptAdmin = function() {
+        console.log("Login prompt requested");
+        if(isAdmin) {
+            document.getElementById('admin-section').style.display = 'block';
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+        }
+    };
 
-    function checkPass() {
+    window.checkPass = function() {
         const pass = document.getElementById('admin-pass').value;
         if(pass === ADMIN_PASSWORD) {
             isAdmin = true;
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('admin-section').style.display = 'block';
+            document.getElementById('public-section').style.display = 'none';
             document.getElementById('admin-nav-btn').innerText = "Admin Active";
+            console.log("Admin logged in");
         } else {
             alert("Incorrect Password");
         }
-    }
+    };
 
-    function showPublic() {
-        document.getElementById('admin-section').style.display = 'none';
+    // 3. DATABASE LISTENER
+    if (db) {
+        db.ref('table_bookings').on('value', snap => {
+            const data = snap.val() || {};
+            renderPublic(data);
+            renderCalendar(data);
+        });
     }
 
     // 4. BOOKING LOGIC
-    function saveBooking() {
+    window.saveBooking = function() {
         const table = document.getElementById('adm-table').value;
         const date = document.getElementById('adm-date').value;
         const start = document.getElementById('adm-time').value;
@@ -156,13 +173,15 @@
             end = (parseInt(h) + parseInt(dur)).toString().padStart(2, '0') + ":" + m;
         }
 
-        db.ref('table_bookings').push({ table, date, start, end, dur });
-        alert("Booking saved!");
-    }
+        db.ref('table_bookings').push({ table, date, start, end, dur })
+          .then(() => alert("Booking saved!"))
+          .catch(err => alert("Error saving: " + err.message));
+    };
 
-    // 5. RENDER PUBLIC VIEW
+    // 5. RENDERING FUNCTIONS
     function renderPublic(data) {
         const grid = document.getElementById('status-grid');
+        if (!grid) return;
         grid.innerHTML = '';
         const now = new Date();
         const today = now.toISOString().split('T')[0];
@@ -183,13 +202,13 @@
         }
     }
 
-    // 6. RENDER CALENDAR VIEW
     function renderCalendar(data) {
         const body = document.getElementById('calendar-body');
         const head = document.getElementById('table-headers');
+        if (!body || !head) return;
+        
         body.innerHTML = '';
         head.innerHTML = '<th>Time</th>';
-        
         const today = new Date().toISOString().split('T')[0];
 
         for(let i=1; i<=4; i++) head.innerHTML += `<th>Table ${i}</th>`;
@@ -212,3 +231,4 @@
 </script>
 </body>
 </html>
+
