@@ -15,18 +15,14 @@
         }
 
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; }
-        
-        /* Navigation & Security */
         header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; }
         
-        /* Grid Display (Public) */
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
         .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
         .table-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); }
         .is-booked { border-top-color: var(--booked-red); }
 
-        /* Admin Calendar View */
         #admin-section { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
         .calendar-wrap { overflow-x: auto; margin-top: 20px; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
@@ -34,21 +30,18 @@
         th { background: var(--fife-blue); color: white; }
         .slot-booked { background: var(--booked-red); color: white; font-weight: bold; }
 
-        /* Form Styling */
         .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
         input, select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-        .btn-confirm { background: var(--pool-green); color: white; grid-column: span 1; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; }
+        .btn-confirm { background: var(--pool-green); color: white; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; }
 
-        /* Login Overlay */
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; color: #333; }
     </style>
 </head>
 <body>
 
 <header>
     <div style="display:flex; align-items:center;">
-        <img src="ddpl_logo_original.png" style="height:35px; margin-right:10px;">
         <h2 style="font-size: 1.1rem; margin:0;">DDPL Bookings</h2>
     </div>
     <div class="nav-btns">
@@ -101,23 +94,22 @@
 
 <script>
     // 1. FIREBASE CONFIG
-  const firebaseConfig = {
+    const firebaseConfig = {
         apiKey: "AIzaSyDotnyb_6TDlrBC9CqC0ZDZ_h6T91dA_EE",
         authDomain: "ddpl-systems.firebaseapp.com",
-        // Replace the line below with your actual Realtime Database URL
-        databaseURL: "https://ddpl-systems-default-rtdb.europe-west1.firebasedatabase.app/.json", 
+        databaseURL: "https://ddpl-systems-default-rtdb.europe-west1.firebasedatabase.app/",
         projectId: "ddpl-systems",
         storageBucket: "ddpl-systems.firebasestorage.app",
         messagingSenderId: "708399763176",
         appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
     let isAdmin = false;
+
     // 2. LISTEN FOR DATA
     db.ref('table_bookings').on('value', snap => {
         const data = snap.val() || {};
@@ -165,6 +157,7 @@
         }
 
         db.ref('table_bookings').push({ table, date, start, end, dur });
+        alert("Booking saved!");
     }
 
     // 5. RENDER PUBLIC VIEW
@@ -199,10 +192,8 @@
         
         const today = new Date().toISOString().split('T')[0];
 
-        // Headers
         for(let i=1; i<=4; i++) head.innerHTML += `<th>Table ${i}</th>`;
 
-        // Rows (10am to 11pm)
         for(let h=10; h<=23; h++) {
             const row = document.createElement('tr');
             const timeStr = h.toString().padStart(2, '0') + ":00";
@@ -220,6 +211,4 @@
     }
 </script>
 </body>
-
 </html>
-
