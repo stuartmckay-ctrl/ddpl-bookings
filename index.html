@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDPL | Secure Table Booking</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        :root {
+            --fife-blue: #005a8c;
+            --pool-green: #27ae60;
+            --booked-red: #e74c3c;
+            --dark: #121212;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; }
+        
+        /* Navigation & Security */
+        header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; }
+        
+        /* Grid Display (Public) */
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .table-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); }
+        .is-booked { border-top-color: var(--booked-red); }
+
+        /* Admin Calendar View */
+        #admin-section { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+        .calendar-wrap { overflow-x: auto; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; font-size: 0.8rem; }
+        th { background: var(--fife-blue); color: white; }
+        .slot-booked { background: var(--booked-red); color: white; font-weight: bold; }
+
+        /* Form Styling */
+        .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; background: #f9f9f9; padding: 15px; border-radius: 8px; }
+        input, select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+        .btn-confirm { background: var(--pool-green); color: white; grid-column: span 1; cursor: pointer; font-weight: bold; border: none; border-radius: 5px; }
+
+        /* Login Overlay */
+        #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div style="display:flex; align-items:center;">
+        <img src="ddpl_logo_original.png" style="height:35px; margin-right:10px;">
+        <h2 style="font-size: 1.1rem; margin:0;">DDPL Bookings</h2>
+    </div>
+    <div class="nav-btns">
+        <button onclick="showPublic()">Customer View</button>
+        <button id="admin-nav-btn" style="background:var(--fife-blue); color:white;" onclick="promptAdmin()">Admin Login</button>
+    </div>
+</header>
+
+<div class="container">
+    <div id="admin-section">
+        <h3>Admin Booking Panel</h3>
+        <div class="booking-form">
+            <select id="adm-table"><option value="1">Table 1</option><option value="2">Table 2</option><option value="3">Table 3</option><option value="4">Table 4</option></select>
+            <input type="date" id="adm-date">
+            <input type="time" id="adm-time">
+            <select id="adm-dur">
+                <option value="1">1 Hour</option>
+                <option value="2">2 Hours</option>
+                <option value="3">3 Hours</option>
+                <option value="6">6 Hours</option>
+                <option value="block">All Day Block</option>
+            </select>
+            <button class="btn-confirm" onclick="saveBooking()">Save Booking</button>
+        </div>
+
+        <div class="calendar-wrap">
+            <h4 id="cal-date-title">Schedule for Today</h4>
+            <table id="calendar-table">
+                <thead><tr id="table-headers"><th>Time</th></tr></thead>
+                <tbody id="calendar-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="public-section">
+        <h3 id="current-date-label">Current Table Availability</h3>
+        <div id="status-grid" class="status-grid"></div>
+    </div>
+</div>
+
+<div id="login-overlay">
+    <div class="login-box">
+        <h3>Admin Access</h3>
+        <input type="password" id="admin-pass" placeholder="Enter Password">
+        <br><br>
+        <button onclick="checkPass()" style="padding:10px 20px;">Login</button>
+        <button onclick="document.getElementById('login-overlay').style.display='none'">Cancel</button>
+    </div>
+</div>
+
+<script>
+    // 1. FIREBASE CONFIG
+   const firebaseConfig = {
+  apiKey: "AIzaSyDotnyb_6TDlrBC9CqC0ZDZ_h6T91dA_EE",
+  authDomain: "ddpl-systems.firebaseapp.com",
+  projectId: "ddpl-systems",
+  storageBucket: "ddpl-systems.firebasestorage.app",
+  messagingSenderId: "708399763176",
+  appId: "1:708399763176:web:333288db3d171ab679c35d
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; // Change this!
+    let isAdmin = false;
+
+    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; // Change this!
+    let isAdmin = false;
+
+    // 2. LISTEN FOR DATA
+    db.ref('table_bookings').on('value', snap => {
+        const data = snap.val() || {};
+        renderPublic(data);
+        renderCalendar(data);
+    });
+
+    // 3. SECURITY FUNCTIONS
+    function promptAdmin() {
+        if(isAdmin) return;
+        document.getElementById('login-overlay').style.display = 'flex';
+    }
+
+    function checkPass() {
+        const pass = document.getElementById('admin-pass').value;
+        if(pass === ADMIN_PASSWORD) {
+            isAdmin = true;
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('admin-section').style.display = 'block';
+            document.getElementById('admin-nav-btn').innerText = "Admin Active";
+        } else {
+            alert("Incorrect Password");
+        }
+    }
+
+    function showPublic() {
+        document.getElementById('admin-section').style.display = 'none';
+    }
+
+    // 4. BOOKING LOGIC
+    function saveBooking() {
+        const table = document.getElementById('adm-table').value;
+        const date = document.getElementById('adm-date').value;
+        const start = document.getElementById('adm-time').value;
+        const dur = document.getElementById('adm-dur').value;
+
+        if(!date || !start) return alert("Select date/time");
+
+        let end = "";
+        if(dur === 'block') {
+            end = "23:59";
+        } else {
+            let [h, m] = start.split(':');
+            end = (parseInt(h) + parseInt(dur)).toString().padStart(2, '0') + ":" + m;
+        }
+
+        db.ref('table_bookings').push({ table, date, start, end, dur });
+    }
+
+    // 5. RENDER PUBLIC VIEW
+    function renderPublic(data) {
+        const grid = document.getElementById('status-grid');
+        grid.innerHTML = '';
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const currentTime = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+
+        for(let i=1; i<=4; i++) {
+            const bookings = Object.values(data).filter(b => b.table == i && b.date == today);
+            const active = bookings.find(b => currentTime >= b.start && currentTime <= b.end);
+
+            const card = document.createElement('div');
+            card.className = `table-card ${active ? 'is-booked' : ''}`;
+            card.innerHTML = `
+                <h3>Table ${i}</h3>
+                <p style="color:${active?'red':'green'}; font-weight:bold;">${active ? 'OCCUPIED' : 'FREE'}</p>
+                <small>${active ? 'Until ' + active.end : 'Available Now'}</small>
+            `;
+            grid.appendChild(card);
+        }
+    }
+
+    // 6. RENDER CALENDAR VIEW
+    function renderCalendar(data) {
+        const body = document.getElementById('calendar-body');
+        const head = document.getElementById('table-headers');
+        body.innerHTML = '';
+        head.innerHTML = '<th>Time</th>';
+        
+        const today = new Date().toISOString().split('T')[0];
+
+        // Headers
+        for(let i=1; i<=4; i++) head.innerHTML += `<th>Table ${i}</th>`;
+
+        // Rows (10am to 11pm)
+        for(let h=10; h<=23; h++) {
+            const row = document.createElement('tr');
+            const timeStr = h.toString().padStart(2, '0') + ":00";
+            row.innerHTML = `<td>${timeStr}</td>`;
+
+            for(let t=1; t<=4; t++) {
+                const booked = Object.values(data).find(b => 
+                    b.table == t && b.date == today && 
+                    (timeStr >= b.start && timeStr < b.end)
+                );
+                row.innerHTML += `<td class="${booked ? 'slot-booked' : ''}">${booked ? 'BOOKED' : ''}</td>`;
+            }
+            body.appendChild(row);
+        }
+    }
+</script>
+</body>
+</html>
