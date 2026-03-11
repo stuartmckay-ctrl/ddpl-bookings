@@ -19,46 +19,41 @@
         header { background: var(--dark); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--fife-blue); }
         
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        
-        /* Navigation */
-        .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; transition: 0.3s; }
+        .nav-btns button { padding: 8px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; margin-left: 5px; }
         .btn-admin { background: var(--fife-blue); color: white; }
         
         /* Grid Display */
         .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .table-card { background: white; border-radius: 10px; padding: 20px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); transition: transform 0.2s; }
-        .table-card:hover { transform: translateY(-5px); }
+        .table-card { background: white; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 10px solid var(--pool-green); }
         .is-booked { border-top-color: var(--booked-red); }
         .is-maint { border-top-color: var(--maint-grey); }
 
-        /* Admin Panel */
-        #admin-section { display: none; background: white; padding: 20px; border-radius: 10px; margin-bottom: 30px; border: 1px solid #ddd; }
-        .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; background: #f9f9f9; padding: 20px; border-radius: 8px; }
-        label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 5px; color: #555; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        /* Forms */
+        .booking-section { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .booking-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        label { display: block; font-size: 0.75rem; font-weight: bold; margin-bottom: 4px; color: #555; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 0.9rem; }
         .btn-confirm { padding: 10px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; background: var(--pool-green); }
 
-        /* Calendar Table */
+        /* Calendar */
         .calendar-wrap { overflow-x: auto; margin-top: 20px; background: white; padding: 10px; border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; min-width: 900px; }
         th, td { border: 1px solid #eee; padding: 8px; text-align: center; font-size: 0.75rem; }
-        th { background: var(--fife-blue); color: white; position: sticky; top: 0; }
+        th { background: var(--fife-blue); color: white; }
         
-        /* Live Indicator */
+        /* Indicators */
         .pulse-icon { width: 8px; height: 8px; background-color: #27ae60; border-radius: 50%; margin-right: 8px; animation: blink 1.5s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-        /* Login Overlay */
+        #admin-section { display: none; }
         #login-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; }
-        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 300px; }
+        .login-box { background: white; padding: 30px; border-radius: 10px; text-align: center; width: 280px; }
     </style>
 </head>
 <body>
 
 <header>
-    <div style="display:flex; align-items:center;">
-        <h2 style="font-size: 1.2rem; margin:0;">DDPL Pool Bookings</h2>
-    </div>
+    <h2 style="font-size: 1.1rem; margin:0;">DDPL Pool Bookings</h2>
     <div class="nav-btns">
         <button onclick="showPublic()">Customer View</button>
         <button id="admin-nav-btn" class="btn-admin" onclick="promptAdmin()">Admin Login</button>
@@ -66,77 +61,76 @@
 </header>
 
 <div class="container">
-    <div id="admin-section">
-        <h3>Admin Booking & Maintenance</h3>
-        <div class="booking-form">
-            <div>
-                <label>Table</label>
-                <select id="adm-table"></select>
+    <div id="public-section">
+        <div class="booking-section">
+            <h4 style="margin-top:0;">Request a Table</h4>
+            <div class="booking-form">
+                <div><label>Your Name</label><input type="text" id="pub-name" placeholder="Name"></div>
+                <div><label>Table</label><select id="pub-table"></select></div>
+                <div><label>Date</label><input type="date" id="pub-date"></div>
+                <div><label>Time</label><input type="time" id="pub-time"></div>
+                <div><label>Duration</label><select id="pub-dur"><option value="1">1h</option><option value="2">2h</option></select></div>
+                <div style="display:flex; align-items:flex-end;"><button class="btn-confirm" onclick="processBooking(false)" style="width:100%;">Book Table</button></div>
             </div>
-            <div>
-                <label>Date</label>
-                <input type="date" id="adm-date">
-            </div>
-            <div>
-                <label>Time & Duration</label>
-                <div style="display:flex; gap:5px;">
-                    <input type="time" id="adm-time">
-                    <select id="adm-dur">
-                        <option value="1">1 Hour</option>
-                        <option value="2">2 Hours</option>
-                        <option value="3">3 Hours</option>
-                        <option value="6">6 Hours</option>
-                        <option value="block">All Day</option>
-                    </select>
-                </div>
-            </div>
-            <div>
-                <label>Maintenance Note</label>
-                <input type="text" id="adm-note" placeholder="Reason for offline">
-            </div>
-            <div style="display:flex; gap:10px; align-items:flex-end;">
-                <button class="btn-confirm" onclick="saveBooking()" style="flex:1">Book Slot</button>
-                <button class="btn-confirm" onclick="toggleMaintenance()" style="flex:1; background:var(--maint-grey);">Service Toggle</button>
-            </div>
+            <p style="font-size:0.7rem; color:grey; margin-top:10px;">* Generic booking password required to submit.</p>
         </div>
 
-        <div style="margin-top: 20px; padding: 15px; background: #f1f1f1; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-            <p style="margin:0; font-weight:bold;">Reporting & Data</p>
-            <button class="btn-confirm" style="background: var(--dark); width: auto;" onclick="downloadReport()">Download CSV Report</button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin:0; font-size: 1rem;">Live Table Status</h3>
+            <div style="display: flex; align-items: center;"><div class="pulse-icon"></div><small id="last-updated">Syncing...</small></div>
         </div>
+        <div id="status-grid" class="status-grid"></div>
 
         <div class="calendar-wrap">
-            <h4 id="cal-date-title">Today's Schedule (10:00 - 00:00)</h4>
-            <table id="calendar-table">
-                <thead><tr id="table-headers"><th>Time</th></tr></thead>
-                <tbody id="calendar-body"></tbody>
+            <h4 style="margin: 5px 0;">Today's Full Schedule</h4>
+            <table id="pub-calendar-table">
+                <thead><tr id="pub-table-headers"><th>Time</th></tr></thead>
+                <tbody id="pub-calendar-body"></tbody>
             </table>
         </div>
     </div>
 
-    <div id="public-section">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 id="current-date-label" style="margin:0;">Live Table Availability</h3>
-            <div style="display: flex; align-items: center; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                <div class="pulse-icon"></div>
-                <small id="last-updated" style="color: #666; font-weight: bold;">Connecting...</small>
+    <div id="admin-section">
+        <div class="booking-section">
+            <h4 style="margin-top:0;">Admin Control Panel</h4>
+            <div class="booking-form">
+                <div><label>Customer Name</label><input type="text" id="adm-name" placeholder="Staff/Customer"></div>
+                <div><label>Table</label><select id="adm-table"></select></div>
+                <div><label>Date</label><input type="date" id="adm-date"></div>
+                <div><label>Time</label><input type="time" id="adm-time"></div>
+                <div><label>Duration</label>
+                    <select id="adm-dur">
+                        <option value="1">1h</option><option value="2">2h</option><option value="3">3h</option><option value="6">6h</option><option value="block">All Day</option>
+                    </select>
+                </div>
+                <div><label>Maint. Note</label><input type="text" id="adm-note" placeholder="Reason"></div>
+                <div style="display:flex; gap:5px; align-items:flex-end; grid-column: span 1;">
+                    <button class="btn-confirm" onclick="processBooking(true)" style="flex:1">Book</button>
+                    <button class="btn-confirm" onclick="toggleMaintenance()" style="flex:1; background:var(--maint-grey);">Toggle Out</button>
+                </div>
             </div>
+            <button class="btn-confirm" style="background:var(--dark); margin-top:15px; width:auto;" onclick="downloadReport()">Download CSV Report</button>
         </div>
-        <div id="status-grid" class="status-grid"></div>
+
+        <div class="calendar-wrap">
+            <h4>Admin Schedule View (Click X to Delete)</h4>
+            <table id="adm-calendar-table">
+                <thead><tr id="adm-table-headers"><th>Time</th></tr></thead>
+                <tbody id="adm-calendar-body"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <div id="login-overlay">
     <div class="login-box">
         <h3>Admin Access</h3>
-        <input type="password" id="admin-pass" placeholder="Enter Password" style="margin-bottom:15px;">
-        <button onclick="checkPass()" class="btn-confirm" style="width:100%; margin-bottom:10px;">Login</button>
-        <button onclick="document.getElementById('login-overlay').style.display='none'" style="border:none; background:none; cursor:pointer; color:grey;">Cancel</button>
+        <input type="password" id="admin-pass" placeholder="Password" style="margin-bottom:15px;">
+        <button onclick="checkPass()" class="btn-confirm" style="width:100%;">Login</button>
     </div>
 </div>
 
 <script>
-    // 1. FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyDotnyb_6TDlrBC9CqC0ZDZ_h6T91dA_EE",
         authDomain: "ddpl-systems.firebaseapp.com",
@@ -147,157 +141,134 @@
         appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
 
-    // Global Constants
-    const TOTAL_TABLES = 10; 
     const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
+    const CUSTOMER_BOOKING_PASS = "DDPL2026"; 
+    const TOTAL_TABLES = 10;
     let isAdmin = false;
     let db;
 
-    // Initialize Firebase
     try {
         firebase.initializeApp(firebaseConfig);
         db = firebase.database();
-    } catch (e) { console.error("Firebase Error:", e); }
+    } catch (e) { console.error(e); }
 
-    // Init Table Dropdown
-    const tSel = document.getElementById('adm-table');
-    for(let i=1; i<=TOTAL_TABLES; i++) {
-        tSel.innerHTML += `<option value="${i}">Table ${i}</option>`;
+    function getOpeningHours(dateStr) {
+        const day = new Date(dateStr).getDay();
+        if (day >= 1 && day <= 4) return { start: 15, end: 23 }; 
+        if (day === 5) return { start: 12, end: 23 };           
+        return { start: 11, end: 23 };                          
     }
 
-    // 2. LISTENERS
     if (db) {
         db.ref().on('value', snap => {
             const data = snap.val() || {};
-            renderPublic(data.table_bookings || {}, data.maintenance || {});
-            renderCalendar(data.table_bookings || {}, data.maintenance || {});
-            
-            const now = new Date();
-            document.getElementById('last-updated').innerText = "Live: " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const bookings = data.table_bookings || {};
+            const maint = data.maintenance || {};
+            renderPublic(bookings, maint);
+            renderCalendar('adm', bookings, maint);
+            renderCalendar('pub', bookings, maint);
+            document.getElementById('last-updated').innerText = "Live: " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         });
     }
 
-    // 3. ADMIN FUNCTIONS
-    window.promptAdmin = function() {
-        if(isAdmin) {
-            document.getElementById('admin-section').style.display = 'block';
-            document.getElementById('public-section').style.display = 'none';
-        } else {
-            document.getElementById('login-overlay').style.display = 'flex';
-        }
-    };
+    window.processBooking = function(isFromAdmin) {
+        const prefix = isFromAdmin ? 'adm' : 'pub';
+        const name = document.getElementById(prefix + '-name').value;
+        const table = document.getElementById(prefix + '-table').value;
+        const date = document.getElementById(prefix + '-date').value;
+        const start = document.getElementById(prefix + '-time').value;
+        const dur = document.getElementById(prefix + '-dur').value;
 
-    window.checkPass = function() {
-        if(document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
-            isAdmin = true;
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('admin-section').style.display = 'block';
-            document.getElementById('public-section').style.display = 'none';
-            document.getElementById('admin-nav-btn').innerText = "Admin Dashboard";
-        } else { alert("Incorrect Password"); }
-    };
+        if(!name || !date || !start) return alert("Fill all fields");
+        const hours = getOpeningHours(date);
+        const startHour = parseInt(start.split(':')[0]);
+        if (startHour < hours.start || startHour > hours.end) return alert(`Opening hours: ${hours.start}:00-${hours.end}:00`);
 
-    window.showPublic = function() {
-        document.getElementById('admin-section').style.display = 'none';
-        document.getElementById('public-section').style.display = 'block';
-    };
-
-    // 4. DATA LOGIC
-    window.saveBooking = function() {
-        const table = document.getElementById('adm-table').value;
-        const date = document.getElementById('adm-date').value;
-        const start = document.getElementById('adm-time').value;
-        const dur = document.getElementById('adm-dur').value;
-        if(!date || !start) return alert("Please fill in Date and Time");
-
-        let end;
-        if(dur === 'block') { end = "23:59"; } 
-        else {
-            let [h, m] = start.split(':');
-            end = (parseInt(h) + parseInt(dur)).toString().padStart(2, '0') + ":" + m;
+        if (!isFromAdmin) {
+            if (prompt("Enter Booking Password:") !== CUSTOMER_BOOKING_PASS) return alert("Wrong Password");
         }
 
-        db.ref('table_bookings').push({ table, date, start, end, dur });
-        alert("Table " + table + " Booked!");
+        let end = (dur === 'block') ? "23:59" : (parseInt(start.split(':')[0]) + parseInt(dur)).toString().padStart(2, '0') + ":" + start.split(':')[1];
+        db.ref('table_bookings').push({ name, table, date, start, end, dur });
+        alert("Booking Saved!");
     };
 
-    window.toggleMaintenance = function() {
-        const table = document.getElementById('adm-table').value;
-        const note = document.getElementById('adm-note').value || "Routine Service";
-        const ref = db.ref('maintenance/' + table);
-        ref.once('value', snap => {
-            if(snap.val()) { ref.remove(); alert("Table Online"); }
-            else { ref.set({ active: true, reason: note }); alert("Table Offline"); }
-        });
-    };
-
-    window.deleteBooking = function(id) {
-        if(confirm("Cancel this booking?")) db.ref('table_bookings/' + id).remove();
-    };
-
-    window.downloadReport = function() {
-        db.ref('table_bookings').once('value', snap => {
-            const data = snap.val();
-            if(!data) return alert("No records found");
-            let csv = "Table,Date,Start,End,Duration\n";
-            Object.values(data).forEach(b => csv += `${b.table},${b.date},${b.start},${b.end},${b.dur}\n`);
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'DDPL_Report.csv'; a.click();
-        });
-    };
-
-    // 5. RENDERING
     function renderPublic(bookings, maint) {
         const grid = document.getElementById('status-grid');
         grid.innerHTML = '';
         const today = new Date().toISOString().split('T')[0];
-        const now = new Date().getHours().toString().padStart(2,'0') + ":" + new Date().getMinutes().toString().padStart(2,'0');
+        const nowTime = new Date().getHours().toString().padStart(2,'0') + ":" + new Date().getMinutes().toString().padStart(2,'0');
 
         for(let i=1; i<=TOTAL_TABLES; i++) {
             const isM = maint[i];
-            const active = Object.values(bookings).find(b => b.table == i && b.date == today && now >= b.start && now <= b.end);
+            const tableBookings = Object.values(bookings).filter(b => b.table == i && b.date == today).sort((a,b) => a.start.localeCompare(b.start));
+            const active = tableBookings.find(b => nowTime >= b.start && nowTime <= b.end);
+            const upcoming = tableBookings.filter(b => b.start > nowTime);
 
             const card = document.createElement('div');
             card.className = `table-card ${isM ? 'is-maint' : (active ? 'is-booked' : '')}`;
-            
-            let status = 'FREE', color = 'var(--pool-green)', sub = 'Available Now';
-            if(isM) { status = 'OFFLINE'; color = 'var(--maint-grey)'; sub = isM.reason; card.style.borderTopColor = 'var(--maint-grey)'; }
-            else if(active) { status = 'OCCUPIED'; color = 'var(--booked-red)'; sub = 'Until ' + active.end; }
+            let color = 'var(--pool-green)', status = 'FREE', sub = 'Available Now';
 
-            card.innerHTML = `<h3>Table ${i}</h3><p style="color:${color};font-weight:bold;">${status}</p><small>${sub}</small>`;
+            if(isM) { color = 'var(--maint-grey)'; status = 'OFFLINE'; sub = isM.reason; }
+            else if(active) { color = 'var(--booked-red)'; status = 'OCCUPIED'; sub = active.name; }
+
+            let upHtml = upcoming.length ? `<div style="margin-top:8px;border-top:1px solid #eee;padding-top:5px;font-size:0.7rem;"><b>Next:</b> ${upcoming[0].start} (${upcoming[0].name})</div>` : '';
+            card.innerHTML = `<h3>T${i}</h3><p style="color:${color};font-weight:bold;margin:5px 0;">${status}</p><small>${sub}</small>${upHtml}`;
             grid.appendChild(card);
         }
     }
 
-    function renderCalendar(bookings, maint) {
-        const body = document.getElementById('calendar-body');
-        const head = document.getElementById('table-headers');
+    function renderCalendar(view, bookings, maint) {
+        const body = document.getElementById(view + '-calendar-body');
+        const head = document.getElementById(view + '-table-headers');
         body.innerHTML = ''; head.innerHTML = '<th>Time</th>';
         const today = new Date().toISOString().split('T')[0];
+        const hours = getOpeningHours(today);
 
         for(let i=1; i<=TOTAL_TABLES; i++) head.innerHTML += `<th>T${i}</th>`;
 
-        for(let h=10; h<=23; h++) {
+        for(let h = hours.start; h <= hours.end; h++) {
             const row = document.createElement('tr');
             const tStr = h.toString().padStart(2, '0') + ":00";
             row.innerHTML = `<td>${tStr}</td>`;
             for(let t=1; t<=TOTAL_TABLES; t++) {
                 const isM = maint[t];
                 const bEntry = Object.entries(bookings).find(([id, b]) => b.table == t && b.date == today && tStr >= b.start && tStr < b.end);
-                
                 let style = '', content = '';
-                if(isM) { style = 'background:#eee; color:#aaa;'; content = 'OFF'; }
+                if(isM) { style = 'background:#eee;'; content = 'OFF'; }
                 else if(bEntry) { 
-                    style = 'background:var(--booked-red); color:white;'; 
-                    content = `YES <button onclick="deleteBooking('${bEntry[0]}')" style="background:none; border:none; color:white; cursor:pointer; font-size:10px; font-weight:bold;">X</button>`;
+                    style = 'background:var(--booked-red); color:white;';
+                    content = (view === 'adm') ? `${bEntry[1].name} <button onclick="deleteBooking('${bEntry[0]}')" style="color:white;background:none;border:none;cursor:pointer;font-weight:bold;">X</button>` : 'BOOKED';
                 }
                 row.innerHTML += `<td style="${style}">${content}</td>`;
             }
             body.appendChild(row);
         }
     }
+
+    window.promptAdmin = () => isAdmin ? showAdmin() : document.getElementById('login-overlay').style.display='flex';
+    window.checkPass = () => { if(document.getElementById('admin-pass').value === ADMIN_PASSWORD){ isAdmin=true; document.getElementById('login-overlay').style.display='none'; showAdmin(); } else alert("Wrong Password"); };
+    window.showPublic = () => { document.getElementById('admin-section').style.display='none'; document.getElementById('public-section').style.display='block'; };
+    function showAdmin() { document.getElementById('admin-section').style.display='block'; document.getElementById('public-section').style.display='none'; }
+    window.deleteBooking = (id) => { if(confirm("Delete booking?")) db.ref('table_bookings/'+id).remove(); };
+    window.toggleMaintenance = () => {
+        const table = document.getElementById('adm-table').value;
+        const note = document.getElementById('adm-note').value || "In Service";
+        const ref = db.ref('maintenance/' + table);
+        ref.once('value', snap => snap.val() ? ref.remove() : ref.set({active:true, reason:note}));
+    };
+    window.downloadReport = () => {
+        db.ref('table_bookings').once('value', snap => {
+            const d = snap.val(); if(!d) return alert("No data");
+            let csv = "Name,Table,Date,Start,End\n";
+            Object.values(d).forEach(b => csv += `${b.name},${b.table},${b.date},${b.start},${b.end}\n`);
+            const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv); a.download = 'DDPL_Report.csv'; a.click();
+        });
+    };
+
+    ['pub-table', 'adm-table'].forEach(id => {
+        for(let i=1; i<=TOTAL_TABLES; i++) document.getElementById(id).innerHTML += `<option value="${i}">Table ${i}</option>`;
+    });
 </script>
 </body>
 </html>
