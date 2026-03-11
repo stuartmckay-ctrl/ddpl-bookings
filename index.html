@@ -101,24 +101,23 @@
 
 <script>
     // 1. FIREBASE CONFIG
-   const firebaseConfig = {
-  apiKey: "AIzaSyDotnyb_6TDlrBC9CqC0ZDZ_h6T91dA_EE",
-  authDomain: "ddpl-systems.firebaseapp.com",
-  databaseURL: "https://console.firebase.google.com/project/ddpl-systems/database/ddpl-systems-default-rtdb/data/~2F",
-  projectId: "ddpl-systems",
-  storageBucket: "ddpl-systems.firebasestorage.app",
-  messagingSenderId: "708399763176",
-  appId: "1:708399763176:web:333288db3d171ab679c35d
+  const firebaseConfig = {
+        apiKey: "AIzaSyDotnyb_6TDlrBC9CqC0ZDZ_h6T91dA_EE",
+        authDomain: "ddpl-systems.firebaseapp.com",
+        // Replace the line below with your actual Realtime Database URL
+        databaseURL: "https://ddpl-systems-default-rtdb.europe-west1.firebasedatabase.app/.json", 
+        projectId: "ddpl-systems",
+        storageBucket: "ddpl-systems.firebasestorage.app",
+        messagingSenderId: "708399763176",
+        appId: "1:708399763176:web:333288db3d171ab679c35d"
     };
+
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; // Change this!
+    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; 
     let isAdmin = false;
-
-    const ADMIN_PASSWORD = "DDPL_ADMIN_2024"; // Change this!
-    let isAdmin = false;
-
     // 2. LISTEN FOR DATA
     db.ref('table_bookings').on('value', snap => {
         const data = snap.val() || {};
@@ -223,3 +222,4 @@
 </body>
 
 </html>
+
